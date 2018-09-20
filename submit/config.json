@@ -1,0 +1,20 @@
+{
+  "firstlast": "Yingnan Zhao",
+  "id": 260563769,
+  "assignment": 1,
+  "course": 546,
+  "renders": [
+    { "scene": "sphere",
+      "render": "renders/sphere_normal_offline.exr"
+    },
+    { "scene": "dragon",
+      "render": "renders/dragon_normal_offline.exr"
+    },
+    { "scene": "sphere",
+      "render": "renders/sphere_normal_realtime.exr"
+    },
+    { "scene": "dragon",
+      "render": "renders/dragon_normal_realtime.exr"
+    }
+  ]
+}
