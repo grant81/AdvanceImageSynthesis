@@ -36,7 +36,7 @@ struct DiffuseBSDF : BSDF {
         v3f val(0.f);
         // TODO: Implement this
 		
-		if (Frame::cosTheta(i.wi) <= 0.f || Frame::cosTheta(i.wo) <=0) {
+		if (Frame::cosTheta(i.wi) <= 0.f || Frame::cosTheta(i.wo) <=0.f) {
 			return val;
 		}
 		v3f alb = albedo->eval(worldData, i);

@@ -8,7 +8,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>"C:\Users\Grant\Documents\Masters\Fall2018\ECSE546ImageSynthesis\A2\a2_starter\a2_starter\a2\data\a2\sphere\tinyrender\sphere_simple_diffuse_realtime.toml"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>"C:\Users\Grant\Documents\Masters\Fall2018\ECSE546ImageSynthesis\A2\a2_starter\a2_starter\a2\data\a2\teapot\tinyrender\teapot_simple_offline.toml"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
