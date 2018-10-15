@@ -130,6 +130,9 @@
     <ClInclude Include="src\renderpasses\ssao.h" />
     <ClInclude Include="src\core\renderpass.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="src\shaders\quad.vs" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -158,7 +158,7 @@ struct SSAOPass : RenderPass {
          * 1) Bind the GBuffer.
          */
 	    // TODO: Implement this
-        
+		glBindFramebuffer(GL_FRAMEBUFFER, gbuffer);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
@@ -176,14 +176,26 @@ struct SSAOPass : RenderPass {
          * 5) Unbind the vertex array.
          */
 	    // TODO: Implement this
-        
+		glUseProgram(geometryShader);
+		GLuint modelMatUniform = GLuint(glGetUniformLocation(geometryShader, "model"));
+		GLuint viewMatUniform = GLuint(glGetUniformLocation(geometryShader, "view"));
+		GLuint projectionMatUniform = GLuint(glGetUniformLocation(geometryShader, "projection"));
+		glUniformMatrix4fv(modelMatUniform, 1, GL_FALSE, &(modelMat[0][0]));
+		glUniformMatrix4fv(viewMatUniform, 1, GL_FALSE, &(view[0][0]));
+		glUniformMatrix4fv(projectionMatUniform, 1, GL_FALSE, &(projection[0][0]));
+		for (size_t i = 0; i < objects.size(); i++) {
+			GLObject obj = objects[i];
+			glBindVertexArray(obj.vao);
+			glDrawArrays(GL_TRIANGLES, 0, obj.nVerts);
+			glBindVertexArray(0);
+		}
         // II. SSAO pass
         // =======================================================================================
         /**
          * 1) Bind the screen buffer (postprocess_fboScreen).
          */
 	    // TODO: Implement this
-        
+		glBindFramebuffer(GL_FRAMEBUFFER, postprocess_fboScreen);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
@@ -198,7 +210,32 @@ struct SSAOPass : RenderPass {
          * 7) Unbind the textures.
          */
 	    // TODO: Implement this
-        
+		glUseProgram(shaderSSAO);
+		modelMatUniform = GLuint(glGetUniformLocation(shaderSSAO, "model"));
+		viewMatUniform = GLuint(glGetUniformLocation(shaderSSAO, "view"));
+		projectionMatUniform = GLuint(glGetUniformLocation(shaderSSAO, "projection"));
+		glUniformMatrix4fv(modelMatUniform, 1, GL_FALSE, &(modelMat[0][0]));
+		glUniformMatrix4fv(viewMatUniform, 1, GL_FALSE, &(view[0][0]));
+		glUniformMatrix4fv(projectionMatUniform, 1, GL_FALSE, &(projection[0][0]));
+		GLuint texturePostionSSAO = GLuint(glGetUniformLocation(shaderSSAO, "texturePosition"));
+		GLuint textureNormalSSAO = GLuint(glGetUniformLocation(shaderSSAO, "textureNormal"));
+
+		glUniform1i(texturePostionSSAO, 0);
+		glUniform1i(textureNormalSSAO, 1);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texturePosition);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textureNormal);
+
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+
+
+
         RenderPass::render();
     }
 

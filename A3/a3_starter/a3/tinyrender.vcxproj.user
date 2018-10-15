@@ -8,7 +8,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>$(SolutionDir)data/a3/cbox/tinyrender/cbox_ro_offline.toml</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>$(SolutionDir)data/a3/cbox/tinyrender/cbox_ssao_realtime.toml</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>
