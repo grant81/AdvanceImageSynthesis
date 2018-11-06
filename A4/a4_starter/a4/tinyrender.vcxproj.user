@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ShowAllFiles>true</ShowAllFiles>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LocalDebuggerCommandArguments>$(SolutionDir)data/a4/veach/tinyrender/veach_bsdf_offline.toml</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+<<<<<<< HEAD
+    <LocalDebuggerCommandArguments>$(SolutionDir)data/a4/veach_final/tinyrender/veach_emitter.toml</LocalDebuggerCommandArguments>
+=======
+    <LocalDebuggerCommandArguments>$(SolutionDir)data/a4/sphere/tinyrender/sphere_bsdf_phong_64.toml</LocalDebuggerCommandArguments>
+>>>>>>> parent of 764b5e5... A4 presubmission
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>
