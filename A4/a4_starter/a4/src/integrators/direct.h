@@ -32,8 +32,7 @@ struct DirectIntegrator : Integrator {
                                         v3f& wiW,
                                         float& pdf) const {
         // TODO: Implement this
-		wiW = Warp::squareToCosineHemisphere(sample);
-		pdf = Warp::squareToCosineHemispherePdf(wiW);
+		
     }
 
     void sampleSphereByArea(const p2f& sample,
@@ -61,8 +60,9 @@ struct DirectIntegrator : Integrator {
                                   v3f& wiW,
                                   float& pdf) const {
         // TODO: Implement this
-		float dist = glm::distance(emitterCenter, pShading); //geometry (approximation)
-		float cosThetaMax = dist / sqrt(dist*dist + emitterRadius * emitterRadius);
+		
+		float sinThetaMax2 = emitterRadius * emitterRadius / glm::distance2(emitterCenter, pShading);
+		float cosThetaMax = glm::sqrt(max(0.f, 1 - sinThetaMax2));
 		v3f ne = Warp::squareToUniformCone(sample, cosThetaMax);
 		wiW = glm::mat4(glm::quat(v3f(0, 0, 1), glm::normalize(emitterCenter - pShading)))*v4f(ne, 1);
 		wiW = glm::normalize(wiW);
@@ -72,7 +72,7 @@ struct DirectIntegrator : Integrator {
     v3f renderArea(const Ray& ray, Sampler& sampler) const {
         v3f Lr(0.f);
         // TODO: Implement this
-		int emitterSamples = scene.config.integratorSettings.di.emitterSamples;
+		int emitterSamples = m_emitterSamples;
 		SurfaceInteraction i;
 		SurfaceInteraction shadow;
 		if (scene.bvh->intersect(ray, i)) {
@@ -118,7 +118,7 @@ struct DirectIntegrator : Integrator {
 	v3f renderCosineHemisphere(const Ray& ray, Sampler& sampler) const {
 		v3f Lr(0.f);
 		// TODO: Implement this
-		int emitterSamples = scene.config.integratorSettings.di.emitterSamples;
+		int emitterSamples = m_emitterSamples;
 		SurfaceInteraction i;
 		SurfaceInteraction shadow;
 		if (scene.bvh->intersect(ray, i)) {
@@ -150,7 +150,7 @@ struct DirectIntegrator : Integrator {
     v3f renderBSDF(const Ray& ray, Sampler& sampler) const {
         v3f Lr(0.f);
         // TODO: Implement this
-		int emitterSamples = scene.config.integratorSettings.di.emitterSamples;
+		int emitterSamples = m_emitterSamples;
 		SurfaceInteraction i;
 		SurfaceInteraction shadow;
 		if (scene.bvh->intersect(ray, i)) {
@@ -184,7 +184,7 @@ struct DirectIntegrator : Integrator {
     v3f renderSolidAngle(const Ray& ray, Sampler& sampler) const {
         v3f Lr(0.f);
         // TODO: Implement this
-		int emitterSamples = scene.config.integratorSettings.di.emitterSamples;
+		int emitterSamples = m_emitterSamples;
 		SurfaceInteraction i;
 		SurfaceInteraction shadow;
 		if (scene.bvh->intersect(ray, i)) {
@@ -221,8 +221,8 @@ struct DirectIntegrator : Integrator {
 		v3f LrEmitter(0.f);
 		v3f LrBsdf(0.f);
         // TODO: Implement this
-		int emitterSamples = scene.config.integratorSettings.di.emitterSamples;
-		int bsdfSamples = scene.config.integratorSettings.di.bsdfSamples;
+		int emitterSamples = m_emitterSamples;
+		int bsdfSamples = m_bsdfSamples;
 		SurfaceInteraction i;
 		SurfaceInteraction shadow;
 		if (scene.bvh->intersect(ray, i)) {
@@ -230,11 +230,7 @@ struct DirectIntegrator : Integrator {
 			if (emission != v3f(0.f)) {
 				return emission;
 			}
-<<<<<<< HEAD
 		
-=======
-			
->>>>>>> parent of 764b5e5... A4 presubmission
 			
 			for (int j = 0; j < emitterSamples; j++) {
 				const p2f sample = sampler.next2D();
@@ -252,15 +248,16 @@ struct DirectIntegrator : Integrator {
 				if (scene.bvh->intersect(shadowRay, shadow)) {
 					v3f emission = getEmission(shadow);
 					if (emission != v3f(0.f)) {
-						float pdfJ = getBSDF(i)->pdf(i);
-						float we = balanceHeuristic(emitterSamples, pdf, bsdfSamples, pdfJ);
-						LrEmitter += emission * getBSDF(i)->eval(i)*we / emPdf / pdf;
+						float pdfBsdf = getBSDF(i)->pdf(i);
+						float pdfSA = pdf * emPdf;
+						float we = balanceHeuristic(emitterSamples, pdfSA, bsdfSamples, pdfBsdf);
+						LrEmitter += emission * getBSDF(i)->eval(i)*we / pdfSA;
 					}
 				}
 			}
 
 
-			for (int j = 0; j < emitterSamples; j++) {
+			for (int j = 0; j < bsdfSamples; j++) {
 				float pdf;
 				const p2f sample = sampler.next2D();
 				v3f brdf = getBSDF(i)->sample(i, sample, &pdf);
@@ -269,38 +266,36 @@ struct DirectIntegrator : Integrator {
 				wi = glm::normalize(i.frameNs.toWorld(wi));
 
 				Ray shadowRay = Ray(i.p, wi);
-				if (scene.bvh->intersect(shadowRay, shadow)) {//check if the ray from x was blocked
+				if (scene.bvh->intersect(shadowRay, shadow)) {
 					v3f emission = getEmission(shadow);
 					if (emission != v3f(0.f)) {
 						const p3f pShading = i.p;
-						float emPdf;
+						float emPdf= 1.0 / scene.emitters.size();
 						size_t id = selectEmitter(sampler.next(), emPdf);
-						const Emitter& em = getEmitterByID(id);
+						const Emitter& em = getEmitterByID(getEmitterIDByShapeID(shadow.shapeID));
 						const v3f emitterCenter = scene.getShapeCenter(em.shapeID);
 						float emitterRadius = scene.getShapeRadius(em.shapeID);
-						float dist = glm::distance(emitterCenter, pShading); //geometry (approximation)
-						float cosThetaMax = dist / sqrt(dist*dist + emitterRadius * emitterRadius);
-						float pdfJ = Warp::squareToUniformConePdf(cosThetaMax);
-						LrBsdf += brdf * emission*balanceHeuristic(bsdfSamples,pdf,emitterSamples,pdfJ);
+						float sinThetaMax2 = emitterRadius * emitterRadius / glm::distance2(emitterCenter, pShading);
+						float cosThetaMax = glm::sqrt(max(0.f, 1 - sinThetaMax2));
+						float pdfSA = Warp::squareToUniformConePdf(cosThetaMax)*emPdf;
+						float wb = balanceHeuristic(bsdfSamples, pdf, emitterSamples, pdfSA);
+						LrBsdf += brdf * emission*wb;
 					}
 				}
 
 			}
+			if (emitterSamples <= 0) {
+				Lr = LrBsdf / bsdfSamples;
+			}
+			else if (bsdfSamples <= 0) {
+				Lr = LrEmitter / emitterSamples;
+			}
+			else {
+				Lr = LrEmitter / emitterSamples + LrBsdf / bsdfSamples;
+			}
 
 		}
-<<<<<<< HEAD
 		
-=======
-		if (emitterSamples == 0) {
-			Lr = LrBsdf / bsdfSamples;
-		}
-		else if (bsdfSamples == 0) {
-			Lr = LrEmitter / emitterSamples;
-		}
-		else {
-			Lr = LrEmitter / emitterSamples + LrBsdf / bsdfSamples;
-		}
->>>>>>> parent of 764b5e5... A4 presubmission
 		
         return Lr;
     }

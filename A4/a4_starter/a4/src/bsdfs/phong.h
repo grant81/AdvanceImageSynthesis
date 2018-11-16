@@ -63,7 +63,7 @@ struct PhongBSDF : BSDF {
 		// TODO: Implement 
 		v3f wo = i.wo;
 		v3f wi = i.wi;
-		if (Frame::cosTheta(wo) <= 0.f || Frame::cosTheta(wi) <= 0) {
+		if (Frame::cosTheta(wo) < 0.f || Frame::cosTheta(wi) < 0.f) {
 			return val;
 		}
 		float cosWi = Frame::cosTheta(wi);
@@ -74,33 +74,32 @@ struct PhongBSDF : BSDF {
 		//a dot b = |a||b|cos(theta)
 		float cosa = fmax(glm::dot(glm::normalize(reflect(wi)), glm::normalize(wo)), 0.f);
 
-		val = diffuseR * INV_PI + specularF * (n + 2)*INV_TWOPI*pow(cosa, n);
+		//val = diffuseR * INV_PI + specularF * (n + 2)*INV_TWOPI*pow(cosa, n);
 
-
+		val = specularF * (n + 2)*INV_TWOPI*pow(cosa, n);
 		return val * cosWi*scale;
     }
 
     float pdf(const SurfaceInteraction& i) const override {
         float pdf = 0.f;
-<<<<<<< HEAD
 		v3f reflection = reflect(i.wo); 
 		v3f wi = glm::toMat4(glm::quat(reflection, v3f(0, 0, 1))) * v4f(i.wi, 1);
 		pdf = Warp::squareToPhongLobePdf(wi, exponent->eval(worldData, i));
-=======
-		pdf = Warp::squareToPhongLobePdf(i.wi, exponent->eval(worldData, i));
->>>>>>> parent of 764b5e5... A4 presubmission
         return pdf;
     }
 
-    v3f sample(SurfaceInteraction& i, const v2f& _sample, float* pdf) const override {
+    v3f sample(SurfaceInteraction& i, const v2f& _sample, float* pdf1) const override {
         v3f val(0.f);
         // TODO: Implement this
 		v3f wi = Warp::squareToPhongLobe(_sample, exponent->eval(worldData, i));
-		float Pdf = Warp::squareToPhongLobePdf(wi, exponent->eval(worldData, i));
-		*pdf = Pdf;
 		v3f reflection = reflect(i.wo); 
-		wi = glm::toMat4(glm::quat(v3f(0, 0, 1), reflection)) * v4f(wi, 1); //rotate the lobe to be around the reflection dir in local		
+		wi = glm::toMat4(glm::quat(v3f(0, 0, 1), reflection)) * v4f(wi, 1); 	
 		i.wi = wi;
+		float Pdf = pdf(i);
+		*pdf1 = Pdf;
+		if (Pdf == 0.f) {
+			return val;
+		}
 		v3f brdf = eval(i);
 		val = brdf / Pdf;
         return val;
