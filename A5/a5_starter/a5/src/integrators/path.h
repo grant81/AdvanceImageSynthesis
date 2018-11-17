@@ -59,10 +59,10 @@ struct PathTracerIntegrator : Integrator {
 		
 	}
 	v3f indirectTracer(Sampler& sampler, SurfaceInteraction& hit, int depth) const {
-		float rusPdf = 0.f;
+		float rusPdf = 1.f;
 		if (m_maxDepth == -1) {
 			if (depth >= m_rrDepth-1) {
-				if (sampler.next() > m_rrProb) {
+				if (sampler.next() < m_rrProb) {
 					rusPdf = m_rrProb;
 				}
 				else {
@@ -85,7 +85,7 @@ struct PathTracerIntegrator : Integrator {
 				}
 			} while (emission != v3f(0.f));
 
-			return bsdf /(1.f-rusPdf) * (indirectTracer(sampler, hit, depth+1) + directTracer(sampler, hit));
+			return bsdf /rusPdf * (indirectTracer(sampler, hit, depth+1) + directTracer(sampler, hit));
 			
 		}
 		else {
