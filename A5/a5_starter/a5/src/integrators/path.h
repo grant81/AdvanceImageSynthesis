@@ -1,8 +1,8 @@
 /*
-    This file is part of TinyRender, an educative rendering system.
+	This file is part of TinyRender, an educative rendering system.
 
-    Designed for ECSE 446/546 Realistic/Advanced Image Synthesis.
-    Derek Nowrouzezahrai, McGill University.
+	Designed for ECSE 446/546 Realistic/Advanced Image Synthesis.
+	Derek Nowrouzezahrai, McGill University.
 */
 
 #pragma once
@@ -12,29 +12,29 @@ TR_NAMESPACE_BEGIN
 /**
  * Path tracer integrator
  */
-struct PathTracerIntegrator : Integrator {
-    explicit PathTracerIntegrator(const Scene& scene) : Integrator(scene) {
-        m_isExplicit = scene.config.integratorSettings.pt.isExplicit;
-        m_maxDepth = scene.config.integratorSettings.pt.maxDepth;
-        m_rrDepth = scene.config.integratorSettings.pt.rrDepth;
-        m_rrProb = scene.config.integratorSettings.pt.rrProb;
-    }
+	struct PathTracerIntegrator : Integrator {
+	explicit PathTracerIntegrator(const Scene& scene) : Integrator(scene) {
+		m_isExplicit = scene.config.integratorSettings.pt.isExplicit;
+		m_maxDepth = scene.config.integratorSettings.pt.maxDepth;
+		m_rrDepth = scene.config.integratorSettings.pt.rrDepth;
+		m_rrProb = scene.config.integratorSettings.pt.rrProb;
+	}
 
 
-    v3f renderImplicit(const Ray& ray, Sampler& sampler, SurfaceInteraction& hit) const {
-        v3f Li(1.f);
+	v3f renderImplicit(const Ray& ray, Sampler& sampler, SurfaceInteraction& hit) const {
+		v3f Li(1.f);
 		Ray r = ray;
 		int hitEmitter = 0;
 		int count = 0;
-        // TODO: Implement this
-		pathTracer(sampler, hit, Li, count,hitEmitter);
+		// TODO: Implement this
+		pathTracer(sampler, hit, Li, count, hitEmitter);
 		v3f emission = getEmission(hit);
-		if (hitEmitter==0) {
+		if (hitEmitter == 0) {
 			return v3f(0.f);
 		}
-        return Li;
-    }
-	void pathTracer(Sampler& sampler, SurfaceInteraction& hit, v3f& Li, int depth,int& hitEmitter) const{
+		return Li;
+	}
+	void pathTracer(Sampler& sampler, SurfaceInteraction& hit, v3f& Li, int depth, int& hitEmitter) const {
 		if (depth <= m_maxDepth) {
 			v3f emission = getEmission(hit);
 			if (emission != v3f(0.f) && glm::dot(v3f(0, 0, 1), hit.wo) > 0) {
@@ -49,19 +49,20 @@ struct PathTracerIntegrator : Integrator {
 				Ray next = Ray(hit.p, wi);
 				if (scene.bvh->intersect(next, hit)) {
 					depth += 1;
-					pathTracer(sampler, hit, Li, depth,hitEmitter);
+					pathTracer(sampler, hit, Li, depth, hitEmitter);
 				}
 				else {
 					Li = v3f(0.f);
 				}
 			}
 		}
-		
+
 	}
+	
 	v3f indirectTracer(Sampler& sampler, SurfaceInteraction& hit, int depth) const {
 		float rusPdf = 1.f;
 		if (m_maxDepth == -1) {
-			if (depth >= m_rrDepth-1) {
+			if (depth >= m_rrDepth - 1) {
 				if (sampler.next() < m_rrProb) {
 					rusPdf = m_rrProb;
 				}
@@ -71,46 +72,46 @@ struct PathTracerIntegrator : Integrator {
 			}
 			v3f emission;
 			v3f bsdf;
+			SurfaceInteraction nextHit;
 			float pdf;
 			do {
 				bsdf = getBSDF(hit)->sample(hit, sampler.next2D(), &pdf);
 				v3f wi = glm::normalize(hit.frameNs.toWorld(hit.wi));
 				Ray next = Ray(hit.p, wi);
-				if (scene.bvh->intersect(next, hit)) {
-					emission = getEmission(hit);
-				
+				if (scene.bvh->intersect(next, nextHit)) {
+					emission = getEmission(nextHit);
+
 				}
 				else {
 					return v3f(0.f);
 				}
 			} while (emission != v3f(0.f));
 
-			return bsdf /rusPdf * (indirectTracer(sampler, hit, depth+1) + directTracer(sampler, hit));
-			
+			return bsdf / rusPdf * (indirectTracer(sampler, hit, depth + 1) + directTracer(sampler, hit));
 		}
 		else {
-			if (depth < m_maxDepth-1) {
-				v3f emission;
-				v3f bsdf;
-				float pdf;
-				do {
-					bsdf = getBSDF(hit)->sample(hit, sampler.next2D(), &pdf);
-					v3f wi = glm::normalize(hit.frameNs.toWorld(hit.wi));
-					Ray next = Ray(hit.p, wi);
-					if (scene.bvh->intersect(next, hit)) {
-						emission = getEmission(hit);
-						
-					}
-					else {
-						return v3f(0.f);
-					}
-				} while (emission != v3f(0.f));
-
-				return bsdf * (indirectTracer(sampler, hit, depth+1) + directTracer(sampler, hit));
+			v3f emission;
+			v3f bsdf;
+			float pdf;
+			SurfaceInteraction nextHit;
+			if (depth >= m_maxDepth - 1) {
+				return v3f(0.f);
 			}
+			do {
+				bsdf = getBSDF(hit)->sample(hit, sampler.next2D(), &pdf);
+				v3f wi = glm::normalize(hit.frameNs.toWorld(hit.wi));
+				Ray next = Ray(hit.p, wi);
+				if (scene.bvh->intersect(next, nextHit)) {
+					emission = getEmission(nextHit);
+				}
+				else {
+					return v3f(0.f);
+				}
+			} while (emission != v3f(0.f));
+			
+			return bsdf * (indirectTracer(sampler, nextHit, depth + 1) + directTracer(sampler, nextHit));
 		}
 		
-		return v3f(0.f);
 	}
 	v3f directTracer(Sampler& sampler, SurfaceInteraction& hit) const {
 		v3f LiDirect(0.f);
@@ -127,7 +128,7 @@ struct PathTracerIntegrator : Integrator {
 			v3f wi = pos - hit.p;
 			wi = glm::normalize(wi);
 			hit.wi = hit.frameNs.toLocal(wi);
-			float cosTheta = glm::dot(-wi,n);
+			float cosTheta = glm::dot(-wi, n);
 			if (cosTheta < 0) {
 				return LiDirect;
 			}
@@ -144,10 +145,10 @@ struct PathTracerIntegrator : Integrator {
 		}
 		return LiDirect;
 	}
-    v3f renderExplicit(const Ray& ray, Sampler& sampler, SurfaceInteraction& hit) const {
-        v3f Li(0.f);
+	v3f renderExplicit(const Ray& ray, Sampler& sampler, SurfaceInteraction& hit) const {
+		v3f Li(0.f);
 
-        // TODO: Implement this
+		// TODO: Implement this
 		v3f emission = getEmission(hit);
 		if (emission != v3f(0.f)) {
 			return emission;
@@ -155,28 +156,29 @@ struct PathTracerIntegrator : Integrator {
 		//handle first light
 		v3f LiDirect = directTracer(sampler, hit);
 		v3f LiIndirect = indirectTracer(sampler, hit, 0);
+
 		Li = LiDirect + LiIndirect;
-        return Li;
-    }
-	
+		return Li;
+	}
 
-    v3f render(const Ray& ray, Sampler& sampler) const override {
-        Ray r = ray;
-        SurfaceInteraction hit;
 
-        if (scene.bvh->intersect(r, hit)) {
-            if (m_isExplicit)
-                return this->renderExplicit(ray, sampler, hit);
-            else
-                return this->renderImplicit(ray, sampler, hit);
-        }
-        return v3f(0.0);
-    }
+	v3f render(const Ray& ray, Sampler& sampler) const override {
+		Ray r = ray;
+		SurfaceInteraction hit;
 
-    int m_maxDepth;     // Maximum number of bounces
-    int m_rrDepth;      // When to start Russian roulette
-    float m_rrProb;     // Russian roulette probability
-    bool m_isExplicit;  // Implicit or explicit
+		if (scene.bvh->intersect(r, hit)) {
+			if (m_isExplicit)
+				return this->renderExplicit(ray, sampler, hit);
+			else
+				return this->renderImplicit(ray, sampler, hit);
+		}
+		return v3f(0.0);
+	}
+
+	int m_maxDepth;     // Maximum number of bounces
+	int m_rrDepth;      // When to start Russian roulette
+	float m_rrProb;     // Russian roulette probability
+	bool m_isExplicit;  // Implicit or explicit
 };
 
 TR_NAMESPACE_END

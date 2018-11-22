@@ -38,9 +38,37 @@ struct GIPass : RenderPass {
 
     virtual void buildVBO(size_t objectIdx) override {
         GLObject& obj = objects[objectIdx];
-
+		int pH = 0;
         // TODO: Implement this
+		obj.nVerts = scene.getObjectNbVertices(objectIdx);
+		obj.vertices.resize(obj.nVerts*N_ATTR_PER_VERT);
+		for (size_t i = 0; i < (size_t)obj.nVerts; i++) {
+			v3f pos = scene.getObjectVertexPosition(objectIdx, i);
+			v3f normal = scene.getObjectVertexNormal(objectIdx, i);
+			SurfaceInteraction hit = SurfaceInteraction();
+			hit.p = pos + normal * Epsilon;
+			hit.wo = v3f(0, 0, 1);
+			hit.shapeID = objectIdx;
+			hit.primID = scene.getPrimitiveID(i);
+			hit.frameNg = Frame(normal);
+			hit.frameNs = Frame(normal);
+			hit.matID = scene.getMaterialID(objectIdx, hit.primID);
+			v3f color(0.f);
+			Ray ray = Ray(v3f(0.f), v3f(1, 0, 0));
+			Sampler sampler = Sampler(260563769);
+			for (int j = 0; j < m_samplePerVertex; j++) {
+				color += m_ptIntegrator->renderExplicit(ray, sampler,hit);
+			}
+			color /= m_samplePerVertex;
+			obj.vertices[pH] = pos.x;
+			obj.vertices[pH + 1] = pos.y;
+			obj.vertices[pH + 2] = pos.z;
+			obj.vertices[pH + 3] = color.x;
+			obj.vertices[pH + 4] = color.y;
+			obj.vertices[pH + 5] = color.z;
+			pH += N_ATTR_PER_VERT;
 
+		}
         // VBO
         glGenVertexArrays(1, &obj.vao);
         glBindVertexArray(obj.vao);
@@ -93,9 +121,32 @@ struct GIPass : RenderPass {
         glClearColor(0.f, 0.f, 0.f, 1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
+		// Define shader to use
+		glUseProgram(shader);
 
-        // TODO: Implement this
+		// Update camera
+		glm::mat4 model, view, projection;
+		camera.Update();
+		camera.GetMatricies(projection, view, model);
 
+		// Pass uniforms
+		glUniformMatrix4fv(modelMatUniform, 1, GL_FALSE, &(modelMat[0][0]));
+		glUniformMatrix4fv(viewMatUniform, 1, GL_FALSE, &(view[0][0]));
+		glUniformMatrix4fv(projectionMatUniform, 1, GL_FALSE, &(projection[0][0]));
+		      
+		for (auto& object : objects) {
+			/**
+			 * 1) Bind vertex array of current object.
+			 * 2) Draw its triangles.
+			 * 3) Bind vertex array to 0.
+			 */
+
+			glBindVertexArray(object.vao);
+			glDrawArrays(GL_TRIANGLES, 0, object.nVerts);
+			glBindVertexArray(0);
+
+			// TODO: Implement this
+		}
         RenderPass::render();
     }
 
